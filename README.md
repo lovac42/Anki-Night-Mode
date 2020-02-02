@@ -40,8 +40,8 @@ given the HTML of your card:
 
 ## Screenshots:
 
-<img src="https://github.com/lovac42/ccbc-Night-Mode/blob/master/screenshots/mainwindow-1.png?raw=true">  
+<img src="https://github.com/lovac42/CCBC-Night-Mode/blob/master/screenshots/mainwindow.png?raw=true">  
 
 
-<img src="https://github.com/lovac42/ccbc-Night-Mode/blob/master/screenshots/browser-1.png?raw=true">  
+<img src="https://github.com/lovac42/CCBC-Night-Mode/blob/master/screenshots/browser.png?raw=true">  
 
