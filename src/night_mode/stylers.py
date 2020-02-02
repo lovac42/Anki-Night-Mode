@@ -1,6 +1,14 @@
-from PyQt5.QtCore import Qt
-from PyQt5 import QtWidgets
+# -*- coding: utf-8 -*-
+# Copyright (C) 2019-2020 Lovac42
+# Copyright (C) 2015-2019 Michal Krassowski <krassowski.michal@gmail.com>
+# Support: https://github.com/lovac42/CCBC-Night-Mode
+# License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
 
+
+from PyQt4.QtCore import Qt
+from PyQt4 import QtGui as QtWidgets
+
+import ccbc
 import aqt
 from anki.stats import CollectionStats
 from aqt import mw, editor, QPixmap
@@ -336,7 +344,7 @@ class BrowserStyler(Styler):
     }
 
     @wraps
-    def init(self, browser, mw):
+    def init(self, browser, mw, *args, **kwargs):
 
         if self.config.enable_in_dialogs:
 
@@ -348,33 +356,56 @@ class BrowserStyler(Styler):
             browser.form.tableView.horizontalHeader().setStyleSheet(self.table_header)
 
             browser.form.searchEdit.setStyleSheet(self.search_box)
-            browser.form.searchEdit.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLength)
+            # try: #qt4.8
+            browser.form.searchEdit.setSizeAdjustPolicy(
+                QtWidgets.QComboBox.AdjustToMinimumContentsLength)
+            # except: #qt5
+                # browser.form.searchEdit.setSizeAdjustPolicy(
+                    # QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLength)
 
-            browser.form.searchButton.setStyleSheet(self.buttons.qt)
-            browser.form.previewButton.setStyleSheet(self.buttons.qt)
+            # browser.form.searchButton.setStyleSheet(self.buttons.qt)
+            browser.form.searchButton.setText("")
+            browser.form.searchButton.setStyleSheet(self.search_button)
+            # try:
+                # browser.form.previewButton.setStyleSheet(self.buttons.qt)
+            # except: pass
+
+            #Added for ccbc qt4 port
+            browser.toolbar.web.eval('document.body.className+=" night_mode";')
+            browser.toolbar._css = ccbc.css.browser_toolbar + self.shared.top
+            browser.toolbar.draw()
+
 
     # TODO: test this
-    #@wraps
+    @wraps
     def _renderPreview(self, browser, cardChanged=False):
         if browser._previewWindow:
-            self.app.take_care_of_night_class(web_object=browser._previewWeb)
+            # self.app.take_care_of_night_class(web_object=browser._previewWeb)
+            browser._previewWindow.setStyleSheet(self.shared.menu+self.style)
+            browser._previewWeb.eval('document.body.className+=" night_mode";')
+            global_style = '.card {' + self.shared.colors + '}'
+            mw.reviewer._css = self.shared.body_colors + global_style
+        else:
+            mw.reviewer._css = ccbc.css.reviewer
 
-
-    @wraps(position='around')
-    def buildTree(self, browser, _old):
-        root = _old(browser)
-        if root: # For Anki 2.1.17++
-            return root
-        # ---------------------------
-        # For Anki 2.1.15--
-        root = browser.sidebarTree
-        for item in root.findItems('', Qt.MatchContains | Qt.MatchRecursive):
-            icon = item.icon(0)
-            pixmap = icon.pixmap(32, 32)
-            image = pixmap.toImage()
-            image.invertPixels()
-            new_icon = aqt.QIcon(QPixmap.fromImage(image))
-            item.setIcon(0, new_icon)
+    # # TODO: Remove this in later versions
+    # @wraps(position='around')
+    # def buildTree(self, browser, _old):
+        # root = _old(browser)
+        # if root: # For Anki 2.1.17++
+            # return root
+        # try:
+            # root = browser.sidebarTree
+            # for item in root.findItems('', Qt.MatchContains | Qt.MatchRecursive):
+                # icon = item.icon(0)
+                # pixmap = icon.pixmap(32, 32)
+                # image = pixmap.toImage()
+                # image.invertPixels()
+                # new_icon = aqt.QIcon(QPixmap.fromImage(image))
+                # item.setIcon(0, new_icon)
+        # except AttributeError:
+            # #hidden sidebarTree for webkit
+            # pass
 
     @wraps
     def setupSidebar(self, browser):
@@ -499,35 +530,51 @@ class BrowserStyler(Styler):
         }
         """
 
+    @css
+    def search_button(self):
+        return """
+        QPushButton
+        {
+            width: 16px;
+            image: url('""" + self.app.icons.search + """');
+        }
+        """
 
-try: # Requires anki 2.1.17++
-    from aqt.browser import SidebarModel
 
-    class SidebarModelStyler(Styler):
 
-        target = SidebarModel
 
-        @wraps
-        def init(self, *args, **kwargs):
-            self.inverted = [] # Prevent auto invert of icon colors.
+# try: # Requires anki 2.1.17++
+    # from aqt.browser import SidebarModel
 
-        @wraps(position='around')
-        def iconFromRef(self, sidebar_model, iconRef, _old):
-            icon = _old(sidebar_model, iconRef)
-            try:
-                if icon and iconRef not in self.inverted:
-                    pixmap = icon.pixmap(32, 32)
-                    image = pixmap.toImage()
-                    image.invertPixels()
-                    icon = aqt.QIcon(QPixmap.fromImage(image))
+    # class SidebarModelStyler(Styler):
 
-                    self.inverted.append(iconRef)
-                    sidebar_model.iconCache[iconRef] = icon
-            except TypeError:
-                pass
-            return icon
-except ImportError:
-    pass
+        # target = SidebarModel
+
+        # @wraps
+        # def init(self, *args, **kwargs):
+            # self.inverted = [] # Prevent auto invert of icon colors.
+
+        # @wraps(position='around')
+        # def iconFromRef(self, sidebar_model, iconRef, _old):
+            # icon = _old(sidebar_model, iconRef)
+            # try:
+                # if icon and iconRef not in self.inverted:
+                    # pixmap = icon.pixmap(32, 32)
+                    # image = pixmap.toImage()
+                    # image.invertPixels()
+                    # icon = aqt.QIcon(QPixmap.fromImage(image))
+
+                    # self.inverted.append(iconRef)
+                    # sidebar_model.iconCache[iconRef] = icon
+            # except TypeError:
+                # pass
+            # return icon
+# except ImportError:
+    # pass
+
+
+
+
 
 
 class AddCardsStyler(Styler):

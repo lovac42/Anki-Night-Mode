@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) 2019-2020 Lovac42
+# Copyright (C) 2015-2019 Michal Krassowski <krassowski.michal@gmail.com>
+# Support: https://github.com/lovac42/CCBC-Night-Mode
+# License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
+
+
 from .config import ConfigValueGetter
 from .internals import css, snake_case, SingletonMetaclass, RequiringMixin
 
@@ -144,7 +151,7 @@ class ButtonsStyle(Style):
         """ + restrict_to_parent + """ QPushButton""" + restrict_to + """
         {
             background: qlineargradient(x1: 0.0, y1: 0.0, x2: 0.0, y2: 1.0, radius: 1, stop: 0.03 #3D4850, stop: 0.04 #313d45, stop: 1 #232B30);
-            border-radius: 3px;
+            border-radius: 1px;
             """ + self.idle + """
         }
         """ + restrict_to_parent + """ QPushButton""" + restrict_to + """:hover

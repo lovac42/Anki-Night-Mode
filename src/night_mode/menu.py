@@ -1,5 +1,12 @@
-from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QAction, QMenu
+# -*- coding: utf-8 -*-
+# Copyright (C) 2019-2020 Lovac42
+# Copyright (C) 2015-2019 Michal Krassowski <krassowski.michal@gmail.com>
+# Support: https://github.com/lovac42/CCBC-Night-Mode
+# License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
+
+
+from PyQt4.QtGui import QKeySequence
+from PyQt4.QtGui import QAction, QMenu
 
 from aqt import mw
 
@@ -7,20 +14,21 @@ from .languages import _
 
 
 def get_or_create_menu(attribute_name, label):
+    return mw.form.menuView
 
-    if not hasattr(mw, attribute_name):
-        menu = QMenu(_(label), mw)
-        setattr(mw, attribute_name, menu)
+    # if not hasattr(mw, attribute_name):
+        # menu = QMenu(_(label), mw)
+        # setattr(mw, attribute_name, menu)
 
-        mw.form.menubar.insertMenu(
-            mw.form.menuTools.menuAction(),
-            menu
-        )
-    else:
-        menu = getattr(mw, attribute_name)
-        menu.setTitle(_(label))
+        # mw.form.menubar.insertMenu(
+            # mw.form.menuTools.menuAction(),
+            # menu
+        # )
+    # else:
+        # menu = getattr(mw, attribute_name)
+        # menu.setTitle(_(label))
 
-    return menu
+    # return menu
 
 
 class Menu:

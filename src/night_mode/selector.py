@@ -1,5 +1,12 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QCheckBox
+# -*- coding: utf-8 -*-
+# Copyright (C) 2019-2020 Lovac42
+# Copyright (C) 2015-2019 Michal Krassowski <krassowski.michal@gmail.com>
+# Support: https://github.com/lovac42/CCBC-Night-Mode
+# License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
+
+
+from PyQt4.QtCore import Qt
+from PyQt4.QtGui import QLabel, QHBoxLayout, QVBoxLayout, QCheckBox
 
 from .gui import create_button, AddonDialog
 from .languages import _

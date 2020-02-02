@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
-# Copyright: Michal Krassowski <krassowski.michal@gmail.com>
+# Copyright (C) 2019-2020 Lovac42
+# Copyright (C) 2015-2019 Michal Krassowski <krassowski.michal@gmail.com>
+# Support: https://github.com/lovac42/CCBC-Night-Mode
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
+
+
 """
 This plugin adds the function of night mode, similar that one implemented in AnkiDroid.
 
@@ -37,13 +41,15 @@ And translators:
 - Jeremias (Swedish)
 - Is (German)
 """
+
+
 import traceback
 
 from anki.hooks import addHook, runHook
 from aqt import appVersion
 from aqt import mw
 
-from PyQt5.QtWidgets import QMessageBox
+from PyQt4.QtGui import QMessageBox
 
 from .actions_and_settings import *
 from .internals import alert
@@ -54,9 +60,9 @@ from .menu import get_or_create_menu, Menu
 from .stylers import Styler
 from .styles import Style, MessageBoxStyle
 
-__addon_name__ = 'Night Mode'
-__version__ = '2.3.1'
-__anki_version__ = '2.1'
+__addon_name__ = 'Night Mode (CCBC)'
+__version__ = '2.3.4'
+__anki_version__ = '2.1.16_ccbc'
 
 
 if not appVersion.startswith(__anki_version__):
@@ -211,7 +217,7 @@ class NightMode:
 
     def about(self):
         about_box = self.message_box()
-        about_box.setText(__addon_name__ + ' ' + __version__ + __doc__)
+        about_box.setText(__addon_name__ + ' v' + __version__ + __doc__)
         about_box.setGeometry(300, 300, 250, 150)
         about_box.setWindowTitle('About ' + __addon_name__ + ' ' + __version__)
 

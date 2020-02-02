@@ -1,8 +1,15 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) 2019-2020 Lovac42
+# Copyright (C) 2015-2019 Michal Krassowski <krassowski.michal@gmail.com>
+# Support: https://github.com/lovac42/CCBC-Night-Mode
+# License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
+
+
 from datetime import datetime
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QColorDialog
+from PyQt4.QtCore import QTimer
+from PyQt4.QtGui import QColor
+from PyQt4.QtGui import QColorDialog
 
 from .internals import Setting, MenuAction, alert
 from .color_map import ColorMapWindow
