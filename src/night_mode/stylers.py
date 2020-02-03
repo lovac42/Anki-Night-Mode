@@ -789,13 +789,24 @@ class CardLayoutStyler(Styler):
 
     target = CardLayout
     require = {
-          SharedStyles,
+        SharedStyles,
+        DialogStyle,
+        ButtonsStyle
     }
 
     @wraps
     def init(self, card_layout, *args, **kwargs):
         if self.config.enable_in_dialogs:
             card_layout.mainArea.setStyleSheet(self.qt_style)
+
+    @wraps
+    def setupTabs(self, card_layout, *args, **kwargs):
+        if self.config.enable_in_dialogs:
+            card_layout.tabs.setStyleSheet(self.qt_style)
+            card_layout.setStyleSheet(
+                self.buttons.qt + self.dialog.style +
+                'QDialog, QCheckBox, QLabel, QTimeEdit{' + self.shared.colors + '}'
+            )
 
     @css
     def qt_style(self):
