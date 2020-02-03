@@ -22,6 +22,7 @@ def delayedLoader():
     from .night_mode import NightMode
     night_mode = NightMode()
     night_mode.load()
+    mw.night_mode = night_mode
 
 def onProfileLoaded():
     if not night_mode:

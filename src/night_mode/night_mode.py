@@ -109,19 +109,19 @@ class NightMode:
     menu_layout = [
         EnableNightMode,
         EnableInDialogs,
-        '-',
-        InvertImage,
-        InvertLatex,
-        TransparentLatex,
+        StyleScrollBars,
+        ModeSettings,
         '-',
         BackgroundColor,
         TextColor,
         ResetColors,
         '-',
-        ModeSettings,
         UserColorMap,
         DisabledStylers,
-        StyleScrollBars,
+        '-',
+        # InvertImage, #not in qt4
+        InvertLatex, #untested
+        TransparentLatex,
         '-',
         About
     ]
@@ -171,12 +171,13 @@ class NightMode:
 
     def on(self):
         """Turn on night mode."""
-        self.styles.replace()
+        self.styles.replace() #replace w/ dark css
         runHook("night_mode_state_changed", True)
 
     def off(self):
         """Turn off night mode."""
-        self.styles.restore()
+        # self.styles.restore()
+        self.styles.replace() #replace w/ light css
         runHook("night_mode_state_changed", False)
 
     def refresh(self, reload=False):
@@ -202,14 +203,7 @@ class NightMode:
             return
 
         # Reload current screen.
-        if mw.state == 'review':
-            mw.moveToState('overview')
-            mw.moveToState('review')
-        if mw.state == 'deckBrowser':
-            mw.deckBrowser.refresh()
-        if mw.state == 'overview':
-            mw.overview.refresh()
-
+        mw.reset(guiOnly=True)
         # Redraw toolbar (should be always visible).
         mw.toolbar.draw()
         self.update_menu()

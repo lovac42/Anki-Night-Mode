@@ -17,10 +17,12 @@ from aqt.browser import Browser
 from aqt.clayout import CardLayout
 from aqt.editcurrent import EditCurrent
 from aqt.editor import Editor
+from aqt.tagedit import TagEdit
 from aqt.progress import ProgressManager
 from aqt.stats import DeckStats
-from .gui import AddonDialog, iterate_widgets
+from aqt.addons import AddonsDialog, ConfigEditor
 
+from .gui import AddonDialog, iterate_widgets
 from .config import ConfigValueGetter
 from .css_class import inject_css_class
 from .internals import percent_escaped, move_args_to_kwargs, from_utf8, PropertyDescriptor
@@ -28,6 +30,8 @@ from .internals import style_tag, wraps, appends_in_night_mode, replaces_in_nigh
 from .styles import SharedStyles, ButtonsStyle, ImageStyle, DeckStyle, LatexStyle, DialogStyle
 from .internals import SnakeNameMixin, StylerMetaclass, abstract_property
 from .internals import RequiringMixin
+
+import ccbc.css
 
 
 class Styler(RequiringMixin, SnakeNameMixin, metaclass=StylerMetaclass):
@@ -94,6 +98,8 @@ class ToolbarStyler(Styler):
     @style_tag
     @percent_escaped
     def _body(self):
+        if not self.config.state_on:
+            return ""
         return self.shared.top
 
 
@@ -116,6 +122,8 @@ class MenuStyler(Styler):
 
     @appends_in_night_mode
     def css(self):
+        if not self.config.state_on:
+            return ""
         return self.shared.menu
 
 
@@ -129,6 +137,8 @@ class ReviewerStyler(Styler):
 
     @wraps(position='around')
     def _bottomHTML(self, reviewer, _old):
+        if not self.config.state_on:
+            return _old(reviewer)
         return _old(reviewer) + style_tag(percent_escaped(self.bottom_css))
 
     @property
@@ -162,6 +172,8 @@ class ReviewerCards(Styler):
     # TODO: it can be implemented with a nice decorator
     @wraps(position='around')
     def revHtml(self, reviewer, _old):
+        if not self.config.state_on:
+            return _old(reviewer)
         return _old(reviewer) + style_tag(percent_escaped(self.body))
 
     @css
@@ -242,6 +254,8 @@ class DeckBrowserStyler(Styler):
 
     @appends_in_night_mode
     def _body(self):
+        if not self.config.state_on:
+            return ""
         styles_html = style_tag(percent_escaped(self.deck.style + self.shared.body_colors))
         return inject_css_class(True, styles_html)
 
@@ -255,6 +269,8 @@ class DeckBrowserBottomStyler(Styler):
 
     @appends_in_night_mode
     def _centerBody(self):
+        if not self.config.state_on:
+            return ""
         styles_html = style_tag(percent_escaped(self.deck.bottom))
         return inject_css_class(True, styles_html)
 
@@ -269,6 +285,8 @@ class OverviewStyler(Styler):
 
     @appends_in_night_mode
     def _body(self):
+        if not self.config.state_on:
+            return ""
         styles_html = style_tag(percent_escaped(self.css))
         return inject_css_class(True, styles_html)
 
@@ -296,7 +314,10 @@ class OverviewBottomStyler(Styler):
     @style_tag
     @percent_escaped
     def _centerBody(self):
-        return self.deck.bottom
+        if self.config.state_on:
+            return self.deck.bottom
+        return ""
+
 
 
 class AnkiWebViewStyler(Styler):
@@ -313,7 +334,10 @@ class AnkiWebViewStyler(Styler):
 
         args, kwargs = move_args_to_kwargs(old, [web] + list(args), kwargs)
 
-        kwargs['head'] = kwargs.get('head', '') + style_tag(self.waiting_screen)
+        kwargs['head'] = kwargs.get('head', '')
+
+        if self.config.state_on:
+            kwargs['head'] += style_tag(self.waiting_screen)
 
         return old(web, *args[1:], **kwargs)
 
@@ -328,11 +352,15 @@ class BrowserPackageStyler(Styler):
 
     @replaces_in_night_mode
     def COLOUR_MARKED(self):
-        return '#735083'
+        if self.config.state_on:
+            return '#735083'
+        return 'yellow'
 
     @replaces_in_night_mode
     def COLOUR_SUSPENDED(self):
-        return '#777750'
+        if self.config.state_on:
+            return '#777750'
+        return '#FFFFB2'
 
 
 class BrowserStyler(Styler):
@@ -340,46 +368,83 @@ class BrowserStyler(Styler):
     target = Browser
     require = {
         SharedStyles,
-        ButtonsStyle,
+        ButtonsStyle
     }
 
     @wraps
     def init(self, browser, mw, *args, **kwargs):
+        self.basic_css = browser.styleSheet()
+        state = self.config.state_on
+        self.changeToNightMode(
+            browser,
+            state and self.config.enable_in_dialogs
+        )
 
-        if self.config.enable_in_dialogs:
-
-            basic_css = browser.styleSheet()
-            global_style = '#' + browser.form.centralwidget.objectName() + '{' + self.shared.colors + '}'
-            browser.setStyleSheet(self.shared.menu + self.style + basic_css + global_style)
-
-            browser.form.tableView.setStyleSheet(self.table)
-            browser.form.tableView.horizontalHeader().setStyleSheet(self.table_header)
-
-            browser.form.searchEdit.setStyleSheet(self.search_box)
-            # try: #qt4.8
-            browser.form.searchEdit.setSizeAdjustPolicy(
-                QtWidgets.QComboBox.AdjustToMinimumContentsLength)
-            # except: #qt5
-                # browser.form.searchEdit.setSizeAdjustPolicy(
-                    # QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLength)
-
-            # browser.form.searchButton.setStyleSheet(self.buttons.qt)
-            browser.form.searchButton.setText("")
-            browser.form.searchButton.setStyleSheet(self.search_button)
-            # try:
-                # browser.form.previewButton.setStyleSheet(self.buttons.qt)
-            # except: pass
-
-            #Added for ccbc qt4 port
-            browser.toolbar.web.eval('document.body.className+=" night_mode";')
-            browser.toolbar._css = ccbc.css.browser_toolbar + self.shared.top
-            browser.toolbar.draw()
-
-
-    # TODO: test this
     @wraps
-    def _renderPreview(self, browser, cardChanged=False):
+    def changeToNightMode(self, browser, b):
+        if not self.config.enable_in_dialogs:
+            return
+        try:
+            if b:
+                self.makeDark(browser)
+            else:
+                self.makeLight(browser)
+        except RuntimeError:
+            pass
+
+    def makeLight(self, browser):
+        browser.setStyleSheet("")
+        browser.form.tableView.setStyleSheet("")
+        browser.form.tableView.horizontalHeader().setStyleSheet("")
+        browser.form.searchEdit.setStyleSheet("")
+        browser.form.searchButton.setText("Search")
+        browser.form.searchButton.setStyleSheet("")
+
+        browser.sidebarTree.setStyleSheet("")
+        browser.editor.widget.setStyleSheet("")
+
+        browser.toolbar.web.eval('document.body.className.replace(/\bnight_mode\b/g, "");')
+        browser.toolbar._css = ccbc.css.browser_toolbar
+        browser.toolbar.draw()
+
         if browser._previewWindow:
+            browser._previewWindow.setStyleSheet("")
+            browser._previewWeb.eval('document.body.className.replace(/\bnight_mode\b/g, "");')
+            mw.reviewer._css = ccbc.css.reviewer
+
+    def makeDark(self, browser):
+        global_style = '#' + browser.form.centralwidget.objectName() + '{' + self.shared.colors + '}'
+        browser.setStyleSheet(self.shared.menu + self.buttons.qt + self.style + self.basic_css + global_style)
+
+        browser.form.tableView.setStyleSheet(self.table)
+        browser.form.tableView.horizontalHeader().setStyleSheet(self.table_header)
+
+        browser.form.searchEdit.setStyleSheet(self.search_box)
+        browser.form.searchEdit.setSizeAdjustPolicy(
+            QtWidgets.QComboBox.AdjustToMinimumContentsLength)
+
+        browser.form.searchButton.setText("")
+        browser.form.searchButton.setStyleSheet(self.search_button)
+
+        browser.sidebarTree.setStyleSheet(self.style)
+
+        #Added for ccbc qt4 port
+        browser.toolbar.web.eval('document.body.className+=" night_mode";')
+        browser.toolbar._css = ccbc.css.browser_toolbar + self.shared.top
+        browser.toolbar.draw()
+
+        if browser._previewWindow:
+            return self._renderPreview(browser)
+
+    # @wraps
+    # def onContextMenu(self, browser, _point):
+        # browser.rClickMenu.setStyleSheet("background-color:red;")
+        # browser.rClickMenu.popup.setStyleSheet("background-color:red;")
+
+    @wraps(position='around')
+    def _renderPreview(self, browser, cardChanged=False, _old=None):
+        state = self.config.state_on
+        if state and browser._previewWindow:
             # self.app.take_care_of_night_class(web_object=browser._previewWeb)
             browser._previewWindow.setStyleSheet(self.shared.menu+self.style)
             browser._previewWeb.eval('document.body.className+=" night_mode";')
@@ -387,36 +452,15 @@ class BrowserStyler(Styler):
             mw.reviewer._css = self.shared.body_colors + global_style
         else:
             mw.reviewer._css = ccbc.css.reviewer
-
-    # # TODO: Remove this in later versions
-    # @wraps(position='around')
-    # def buildTree(self, browser, _old):
-        # root = _old(browser)
-        # if root: # For Anki 2.1.17++
-            # return root
-        # try:
-            # root = browser.sidebarTree
-            # for item in root.findItems('', Qt.MatchContains | Qt.MatchRecursive):
-                # icon = item.icon(0)
-                # pixmap = icon.pixmap(32, 32)
-                # image = pixmap.toImage()
-                # image.invertPixels()
-                # new_icon = aqt.QIcon(QPixmap.fromImage(image))
-                # item.setIcon(0, new_icon)
-        # except AttributeError:
-            # #hidden sidebarTree for webkit
-            # pass
-
-    @wraps
-    def setupSidebar(self, browser):
-        browser.sidebarTree.setStyleSheet(self.style)
+        if _old:
+            return _old(browser, cardChanged)
 
     @wraps(position='around')
     def _cardInfoData(self, browser, _old):
-
         rep, cs = _old(browser)
 
-        if self.config.enable_in_dialogs:
+        state = self.config.state_on
+        if state and self.config.enable_in_dialogs:
             rep += style_tag("""
                 *
                 {
@@ -543,60 +587,54 @@ class BrowserStyler(Styler):
 
 
 
-# try: # Requires anki 2.1.17++
-    # from aqt.browser import SidebarModel
-
-    # class SidebarModelStyler(Styler):
-
-        # target = SidebarModel
-
-        # @wraps
-        # def init(self, *args, **kwargs):
-            # self.inverted = [] # Prevent auto invert of icon colors.
-
-        # @wraps(position='around')
-        # def iconFromRef(self, sidebar_model, iconRef, _old):
-            # icon = _old(sidebar_model, iconRef)
-            # try:
-                # if icon and iconRef not in self.inverted:
-                    # pixmap = icon.pixmap(32, 32)
-                    # image = pixmap.toImage()
-                    # image.invertPixels()
-                    # icon = aqt.QIcon(QPixmap.fromImage(image))
-
-                    # self.inverted.append(iconRef)
-                    # sidebar_model.iconCache[iconRef] = icon
-            # except TypeError:
-                # pass
-            # return icon
-# except ImportError:
-    # pass
-
-
-
-
-
 
 class AddCardsStyler(Styler):
 
     target = AddCards
     require = {
         SharedStyles,
+        DialogStyle,
         ButtonsStyle,
     }
 
     @wraps
     def init(self, add_cards, mw):
-        if self.config.enable_in_dialogs:
+        state = self.config.state_on
+        self.changeToNightMode(
+            add_cards,
+            state and self.config.enable_in_dialogs
+        )
 
+    @wraps
+    def changeToNightMode(self, add_cards, b):
+        if not self.config.enable_in_dialogs:
+            return
+        try:
+            if b:
+                self.makeDark(add_cards)
+            else:
+                self.makeLight(add_cards)
+        except RuntimeError:
+            pass
+
+    def makeLight(self, add_cards):
+            add_cards.setStyleSheet("")
+            # style add/history button
+            add_cards.form.buttonBox.setStyleSheet("")
+            self.set_style_to_objects_inside(add_cards.form.horizontalLayout, "")
+            # style the single line which has some bright color
+            add_cards.form.line.setStyleSheet("")
+            add_cards.form.fieldsArea.setAutoFillBackground(True)
+
+            add_cards.form.fieldsArea.setStyleSheet("")
+
+    def makeDark(self, add_cards):
+            add_cards.setStyleSheet(self.buttons.qt + self.dialog.style)
             # style add/history button
             add_cards.form.buttonBox.setStyleSheet(self.buttons.qt)
-
             self.set_style_to_objects_inside(add_cards.form.horizontalLayout, self.buttons.qt)
-
             # style the single line which has some bright color
             add_cards.form.line.setStyleSheet('#' + from_utf8('line') + '{border: 0px solid #333}')
-
             add_cards.form.fieldsArea.setAutoFillBackground(False)
 
     @staticmethod
@@ -609,14 +647,42 @@ class EditCurrentStyler(Styler):
 
     target = EditCurrent
     require = {
+        SharedStyles,
+        DialogStyle,
         ButtonsStyle,
     }
 
     @wraps
     def init(self, edit_current, mw):
-        if self.config.enable_in_dialogs:
-            # style close button
+        state = self.config.state_on
+        self.changeToNightMode(
+            edit_current,
+            state and self.config.enable_in_dialogs
+        )
+
+    @wraps
+    def changeToNightMode(self, edit_current, b):
+        if not self.config.enable_in_dialogs:
+            return
+        try:
+            if b:
+                self.makeDark(edit_current)
+            else:
+                self.makeLight(edit_current)
+        except RuntimeError:
+            pass
+
+    def makeLight(self, edit_current):
+            edit_current.setStyleSheet("")
+            edit_current.form.buttonBox.setStyleSheet("")
+            edit_current.form.fieldsArea.setStyleSheet("")
+
+    def makeDark(self, edit_current):
+            edit_current.setStyleSheet(self.buttons.qt + self.dialog.style)
+            edit_current.form.fieldsArea.setStyleSheet(self.buttons.qt)
             edit_current.form.buttonBox.setStyleSheet(self.buttons.qt)
+
+
 
 
 class ProgressStyler(Styler):
@@ -629,7 +695,8 @@ class ProgressStyler(Styler):
     }
 
     def init(self, progress, *args, **kwargs):
-        if self.config.enable_in_dialogs:
+        state = self.config.state_on
+        if state and self.config.enable_in_dialogs:
             progress.setStyleSheet(self.buttons.qt + self.dialog.style)
 
 
@@ -645,7 +712,8 @@ if hasattr(ProgressManager, 'ProgressNoCancel'):
         }
 
         def init(self, progress, label='', *args, **kwargs):
-            if self.config.enable_in_dialogs:
+            state = self.config.state_on
+            if state and self.config.enable_in_dialogs:
                 # Set label and its styles explicitly (otherwise styling does not work)
                 label = aqt.QLabel(label)
                 progress.setLabel(label)
@@ -661,13 +729,15 @@ if hasattr(ProgressManager, 'ProgressNoCancel'):
 
         # so this bit is required to enable init wrapping of Qt objects
         def init(cls, label='', *args, **kwargs):
-            aqt.QProgressDialog.__init__(cls, label, *args, **kwargs)
+            if self.config.state_on:
+                aqt.QProgressDialog.__init__(cls, label, *args, **kwargs)
 
         target.__init__ = init
 
         @wraps
         def init(self, progress, *args, **kwargs):
-            self.legacy_progress_styler.init(progress, *args, **kwargs)
+            if self.config.state_on:
+                self.legacy_progress_styler.init(progress, *args, **kwargs)
 
 
     class ProgressCancelable(Styler):
@@ -677,7 +747,8 @@ if hasattr(ProgressManager, 'ProgressNoCancel'):
 
         @wraps
         def init(self, progress, *args, **kwargs):
-            self.legacy_progress_styler.init(progress, *args, **kwargs)
+            if self.config.state_on:
+                self.legacy_progress_styler.init(progress, *args, **kwargs)
 
 else:
     # beta 31 or newer
@@ -689,7 +760,8 @@ else:
 
         @wraps
         def init(self, progress, *args, **kwargs):
-            self.progress_styler.init(progress, *args, **kwargs)
+            if self.config.state_on:
+                self.progress_styler.init(progress, *args, **kwargs)
 
 
 class StatsWindowStyler(Styler):
@@ -703,8 +775,32 @@ class StatsWindowStyler(Styler):
 
     @wraps
     def init(self, stats, *args, **kwargs):
-        if self.config.enable_in_dialogs:
-            stats.setStyleSheet(self.buttons.qt + self.dialog.style)
+        state = self.config.state_on
+        self.changeToNightMode(
+            stats,
+            state and self.config.enable_in_dialogs
+        )
+
+    @wraps
+    def changeToNightMode(self, stats, b):
+        if not self.config.enable_in_dialogs:
+            return
+        try:
+            if b:
+                css = self.buttons.qt + self.dialog.style
+                stats.setStyleSheet(css)
+            else:
+                stats.setStyleSheet(ccbc.css.stats)
+
+            mw.progress.start(immediate=True)
+            try:
+                stats._refresh()
+            finally:
+                stats.refreshLock = False
+                mw.progress.finish()
+        except RuntimeError:
+            pass
+
 
 
 class StatsReportStyler(Styler):
@@ -745,8 +841,9 @@ class EditorStyler(Styler):
 
     @wraps
     def init(self, editor, mw, widget, parentWindow, addMode=False):
-
-        if self.config.enable_in_dialogs:
+        self.tagWidget = widget
+        state = self.config.state_on
+        if state and self.config.enable_in_dialogs:
 
             editor_css = self.dialog.style + self.buttons.qt
 
@@ -769,7 +866,7 @@ class EditorStyler(Styler):
     @css
     def completer(self):
         return """
-            background-color:black;
+            background-color:#151515;
             border-color:#444;
             color:#eee;
         """
@@ -781,6 +878,42 @@ class EditorStyler(Styler):
         {{
             {self.completer}
         }}
+        """
+
+
+class TagEditStyler(Styler):
+
+    target = TagEdit
+    require = {
+        SharedStyles,
+    }
+
+    @wraps
+    def init(self, tag_edit, *args, **kwargs):
+        state = self.config.state_on
+        self.changeToNightMode(
+            tag_edit,
+            state and self.config.enable_in_dialogs
+        )
+
+    @wraps
+    def changeToNightMode(self, tag_edit, b):
+        if not self.config.enable_in_dialogs:
+            return
+        try:
+            if b:
+                tag_edit.setStyleSheet(self.completer)
+            else:
+                tag_edit.setStyleSheet("")
+        except RuntimeError:
+            pass
+
+    @css
+    def completer(self):
+        return """
+            background-color:#151515;
+            border-color:#444;
+            color:#eee;
         """
 
 
@@ -796,12 +929,14 @@ class CardLayoutStyler(Styler):
 
     @wraps
     def init(self, card_layout, *args, **kwargs):
-        if self.config.enable_in_dialogs:
+        state = self.config.state_on
+        if state and self.config.enable_in_dialogs:
             card_layout.mainArea.setStyleSheet(self.qt_style)
 
     @wraps
     def setupTabs(self, card_layout, *args, **kwargs):
-        if self.config.enable_in_dialogs:
+        state = self.config.state_on
+        if state and self.config.enable_in_dialogs:
             card_layout.tabs.setStyleSheet(self.qt_style)
             card_layout.setStyleSheet(
                 self.buttons.qt + self.dialog.style +
@@ -837,7 +972,8 @@ class EditorWebViewStyler(Styler):
     @style_tag
     @percent_escaped
     def _html(self):
-        if self.config.enable_in_dialogs:
+        state = self.config.state_on
+        if state and self.config.enable_in_dialogs:
 
             custom_css = f"""
             #topbuts {self.buttons.html}
@@ -871,6 +1007,8 @@ class EditorWebViewStyler(Styler):
         return ''
 
 
+
+# .gui.AddonDialog, not part of aqt
 class AddonDialogStyler(Styler):
 
     target = AddonDialog
@@ -881,11 +1019,12 @@ class AddonDialogStyler(Styler):
 
     @wraps
     def init(self, window, *args, **kwargs):
-        if self.config.enable_in_dialogs:
+        state = self.config.state_on
+        if state and self.config.enable_in_dialogs:
             self.style(window)
 
     def style(self, window):
         window.setStyleSheet(
             self.buttons.qt +
-            'QDialog, QCheckBox, QLabel, QTimeEdit{' + self.shared.colors + '}'
+            'QDialog, QCheckBox, QLabel, QTimeEdit, QTextBrowser{' + self.shared.colors + '}'
         )
