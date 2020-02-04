@@ -1007,6 +1007,54 @@ class EditorWebViewStyler(Styler):
         return ''
 
 
+#addons manager
+class AddonsDialogStyler(Styler):
+
+    target = AddonsDialog
+    require = {
+        SharedStyles,
+        ButtonsStyle
+    }
+
+    @wraps
+    def init(self, add_dia, *args, **kwargs):
+        state = self.config.state_on
+        if state and self.config.enable_in_dialogs:
+            css = self.buttons.qt + self.dialog.style
+            add_dia.setStyleSheet(css)
+            add_dia.filterbar.setStyleSheet(self.completer)
+
+    @css
+    def completer(self):
+        return """
+            background-color:#151515;
+            border-color:#444;
+            color:#eee;
+        """
+
+
+#addon config editor
+class ConfigEditorStyler(Styler):
+
+    target = ConfigEditor
+    require = {
+        SharedStyles,
+        ButtonsStyle
+    }
+
+    @wraps
+    def init(self, conf_ed, *args, **kwargs):
+        state = self.config.state_on
+        if state and self.config.enable_in_dialogs:
+            css = self.buttons.qt + self.dialog.style
+            css += 'QDialog, QCheckBox, QLabel, QTimeEdit{' + self.shared.colors + '}'
+            conf_ed.setStyleSheet(css)
+            conf_ed.form.editor.setStyleSheet(self.shared.colors)
+            conf_ed.form.splitter.setStyleSheet(self.shared.colors)
+
+
+
+
 
 # .gui.AddonDialog, not part of aqt
 class AddonDialogStyler(Styler):
