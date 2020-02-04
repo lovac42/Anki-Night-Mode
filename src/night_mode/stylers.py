@@ -21,6 +21,7 @@ from aqt.tagedit import TagEdit
 from aqt.progress import ProgressManager
 from aqt.stats import DeckStats
 from aqt.addons import AddonsDialog, ConfigEditor
+from aqt.deckconf import DeckConf
 
 from .gui import AddonDialog, iterate_widgets
 from .config import ConfigValueGetter
@@ -1052,6 +1053,60 @@ class ConfigEditorStyler(Styler):
             conf_ed.form.editor.setStyleSheet(self.shared.colors)
             conf_ed.form.splitter.setStyleSheet(self.shared.colors)
 
+
+class DeckConf(Styler):
+
+    target = DeckConf
+    require = {
+        SharedStyles,
+        DialogStyle,
+        ButtonsStyle
+    }
+
+
+    @wraps(position='before')
+    def show(self, deck_opt, *args, **kwargs):
+        state = self.config.state_on
+        if state and self.config.enable_in_dialogs:
+            css = self.buttons.qt + self.dialog.style
+            deck_opt.setStyleSheet(self.style + css)
+
+    @css
+    def style(self):
+        return """
+        QSplitter::handle
+        {
+            /* handled below as QWidget */
+        }
+        #""" + from_utf8("widget") + """, QTreeView
+        {
+            """ + self.shared.colors + """
+        }
+        QTreeView::item:selected:active, QTreeView::branch:selected:active
+        {
+            color: """ + self.config.color_t + """;
+            background-color:""" + self.config.color_a + """
+        }
+        QTreeView::item:selected:!active, QTreeView::branch:selected:!active
+        {
+            color: """ + self.config.color_t + """;
+            background-color:""" + self.config.color_a + """
+        }
+        """ + (
+            """
+            /* make the splitter light-dark (match all widgets as selecting with QSplitter does not work) */
+            QWidget{
+                background-color: """ + self.config.color_s + """;
+                color: """ + self.config.color_t + """;
+            }
+            /* make sure that no other important widgets - like tags box - are light-dark */
+            QGroupBox{
+                background-color: """ + self.config.color_b + """;
+            }
+            """
+            if self.config.style_scroll_bars else
+            ''
+        )
 
 
 
