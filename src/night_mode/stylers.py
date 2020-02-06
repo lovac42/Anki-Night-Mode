@@ -807,7 +807,8 @@ class StatsWindowStyler(Styler):
         state = self.config.state_on
         if state and self.config.enable_in_dialogs:
             stats.oldPos = stats.form.web.page().mainFrame().scrollPosition()
-            stats.form.web.setHtml("<style>body {background-color:"+self.config.color_s+";}</style>")
+            html = stats.form.web.page().mainFrame().toHtml()
+            stats.form.web.setHtml("<style>body {background-color:"+self.config.color_s+" !important;}</style>" + html)
 
 
 
