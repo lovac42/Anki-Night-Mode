@@ -802,6 +802,16 @@ class StatsWindowStyler(Styler):
             pass
 
 
+    @wraps(position='before')
+    def refresh(self, stats, *args, **kwargs):
+        state = self.config.state_on
+        if state and self.config.enable_in_dialogs:
+            stats.oldPos = stats.form.web.page().mainFrame().scrollPosition()
+            stats.form.web.setHtml("<style>body {background-color:"+self.config.color_s+";}</style>")
+
+
+
+
 
 class StatsReportStyler(Styler):
 
