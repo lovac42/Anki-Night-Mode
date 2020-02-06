@@ -768,18 +768,10 @@ else:
 class StatsWindowStyler(Styler):
 
     target = DeckStats
-
     require = {
         DialogStyle,
         ButtonsStyle
     }
-
-    @wraps
-    def init(self, stats, *args, **kwargs):
-        state = self.config.state_on
-        if state and self.config.enable_in_dialogs:
-            css = self.buttons.qt + self.dialog.style
-            stats.setStyleSheet(css)
 
     @wraps
     def changeToNightMode(self, stats, b):
@@ -803,12 +795,12 @@ class StatsWindowStyler(Styler):
 
 
     @wraps(position='before')
-    def refresh(self, stats, *args, **kwargs):
+    def show(self, stats, *args, **kwargs):
         state = self.config.state_on
         if state and self.config.enable_in_dialogs:
-            stats.oldPos = stats.form.web.page().mainFrame().scrollPosition()
-            html = stats.form.web.page().mainFrame().toHtml()
-            stats.form.web.setHtml("<style>body {background-color:"+self.config.color_s+" !important;}</style>" + html)
+            css = self.buttons.qt + self.dialog.style
+            stats.setStyleSheet(css)
+            stats.form.web.setHtml("<style>body {background-color:"+self.config.color_s+" !important;}</style>")
 
 
 
