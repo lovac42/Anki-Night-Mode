@@ -777,10 +777,9 @@ class StatsWindowStyler(Styler):
     @wraps
     def init(self, stats, *args, **kwargs):
         state = self.config.state_on
-        self.changeToNightMode(
-            stats,
-            state and self.config.enable_in_dialogs
-        )
+        if state and self.config.enable_in_dialogs:
+            css = self.buttons.qt + self.dialog.style
+            stats.setStyleSheet(css)
 
     @wraps
     def changeToNightMode(self, stats, b):
@@ -793,7 +792,7 @@ class StatsWindowStyler(Styler):
             else:
                 stats.setStyleSheet(ccbc.css.stats)
 
-            mw.progress.start(immediate=True)
+            mw.progress.start()
             try:
                 stats._refresh()
             finally:
@@ -821,7 +820,7 @@ class StatsReportStyler(Styler):
             self.shared.user_color_map + self.shared.body_colors + """
             body{background-image: none}
             """
-        )
+        ) if self.config.state_on else ""
 
 
 class EditorStyler(Styler):
