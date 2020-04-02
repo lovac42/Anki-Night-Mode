@@ -18,7 +18,7 @@ from aqt.clayout import CardLayout
 from aqt.editcurrent import EditCurrent
 from aqt.editor import Editor
 from aqt.tagedit import TagEdit
-from aqt.progress import ProgressManager
+from aqt.progress import ProgressManager, ProgressDialog
 from aqt.stats import DeckStats
 from aqt.addons import AddonsDialog, ConfigEditor
 from aqt.deckconf import DeckConf
@@ -756,7 +756,7 @@ else:
 
     class ProgressDialog(Styler):
 
-        target = ProgressManager.ProgressDialog
+        target = ProgressDialog
         require = {ProgressStyler}
 
         @wraps
