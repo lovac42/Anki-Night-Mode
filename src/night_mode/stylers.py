@@ -1012,6 +1012,44 @@ class EditorWebViewStyler(Styler):
         return ''
 
 
+
+
+
+
+class EditHtmlStyler(Styler):
+
+    target = aqt.forms.edithtml.Ui_Dialog
+    # require = { }
+
+    @wraps
+    def setupUi(self, dialog, *args, **kwargs):
+        state = self.config.state_on
+        self.changeToNightMode(
+            dialog,
+            state and self.config.enable_in_dialogs
+        )
+
+    def changeToNightMode(self, dialog, b):
+        if not self.config.enable_in_dialogs:
+            return
+        try:
+            if b:
+                self.makeDark(dialog)
+            else:
+                self.makeLight(dialog)
+        except RuntimeError:
+            pass
+
+    def makeLight(self, dialog):
+            dialog.textEdit.setStyleSheet("")
+
+    def makeDark(self, dialog):
+            dialog.textEdit.setStyleSheet(f"""\
+                color:{self.config.color_t}; 
+                background-color:{self.config.color_s};
+            """)
+
+
 #addons manager
 class AddonsDialogStyler(Styler):
 
