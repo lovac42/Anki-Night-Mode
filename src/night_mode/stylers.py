@@ -443,7 +443,8 @@ class BrowserStyler(Styler):
         # browser.rClickMenu.popup.setStyleSheet("background-color:red;")
 
     @wraps(position='around')
-    def _renderPreview(self, browser, cardChanged=False, _old=None):
+    def _renderPreview(self, browser, *args, **kwargs):
+        old = kwargs.pop('_old')
         state = self.config.state_on
         if state and browser._previewWindow:
             # self.app.take_care_of_night_class(web_object=browser._previewWeb)
@@ -453,12 +454,13 @@ class BrowserStyler(Styler):
             mw.reviewer._css = self.shared.body_colors + global_style
         else:
             mw.reviewer._css = ccbc.css.reviewer
-        if _old:
-            return _old(browser, cardChanged)
+        if old:
+            return old(browser, *args, **kwargs)
 
     @wraps(position='around')
-    def _cardInfoData(self, browser, _old):
-        rep, cs = _old(browser)
+    def _cardInfoData(self, browser, *args, **kwargs):
+        old = kwargs.pop('_old')
+        rep, cs = old(browser, *args, **kwargs)
 
         state = self.config.state_on
         if state and self.config.enable_in_dialogs:
@@ -838,8 +840,8 @@ class EditorStyler(Styler):
 
     # TODO: this would make more sense if we add some styling to .editor-btn
     def _addButton(self, editor, icon, command, *args, **kwargs):
-        original_function = kwargs.pop('_old')
-        button = original_function(editor, icon, command, *args, **kwargs)
+        old = kwargs.pop('_old')
+        button = old(editor, icon, command, *args, **kwargs)
         return button.replace('<button>', '<button class="editor-btn">')
 
     @wraps
