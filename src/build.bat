@@ -3,7 +3,7 @@ set ZIP=C:\PROGRA~1\7-Zip\7z.exe a -tzip -y -r
 set REPO=night_mode
 set NAME=Night Mode for CCBC
 set PACKID=night_mode
-set VERSION=3.0.0
+set VERSION=3.1.0
 
 
 quick_manifest.exe "%NAME%" "%PACKID%" >%REPO%\manifest.json
